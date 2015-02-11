@@ -1,0 +1,39 @@
+{
+  "name": "taracotjs-generator",
+  "description": "Taracot JS application generator",
+  "version": "0.0.32",
+  "author": {
+    "name": "Michael A. Matveev",
+    "email": "xtreme@rh1.ru"
+  },
+  "dependencies": {
+    "async": "^0.9.0",
+    "commander": "1.3.2",
+    "decompress-zip": "0.0.8",
+    "fs-extra": "~0.9.1",
+    "request": "^2.53.0",
+    "request-progress": "^0.3.1"
+  },
+  "keywords": [
+    "node.js",
+    "express.js",
+    "mongodb",
+    "redis",
+    "cms",
+    "taracot",
+    "taracotjs"
+  ],
+  "repository": {
+    "type": "mercurial",
+    "url": "https://code.google.com/p/taracotjs-generator/"
+  },
+  "main": "bin/taracotjs",
+  "bin": {
+    "taracotjs": "./bin/taracotjs"
+  },
+  "engines": {
+    "node": ">= 0.8.0"
+  },
+  "preferGlobal": true,
+  "scripts": {}
+}

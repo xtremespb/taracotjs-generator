@@ -1,0 +1,184 @@
+#!/usr/bin/env node
+
+var program = require('commander'),
+    fs = require("fs-extra"),
+    path = require('path'),
+    async = require('async'),
+    request = require('request'),
+    progress = require('request-progress'),
+    DecompressZip = require('decompress-zip');
+
+program
+    .version('0.0.32')
+    .usage('[options] [dir]')
+    .option('-p, --proxy [proxy]', 'use proxy to download files')
+    .option('-r, --release [release]', 'production (default), dev or minimal')
+    .option('-u, --update', "update mode (don't copy config files")
+    .option('-s, --silent', 'ask no questions (silent mode)')
+    .option('-f, --force', 'install even if the destination directory is not empty')
+    .parse(process.argv);
+
+var dest_dir = program.args.shift() || '',
+    proxy_url = program.proxy || '',
+    inst_release = 'prod',
+    release_dir = path.join(__dirname, '..', 'release'),
+    updates_url = 'https://taracot.org/source/taracotjs/update_info.json',
+    modules_url = 'https://taracot.org/source/taracotjs',
+    release_filenames = ['latest_dev.zip', 'latest_min.zip', 'latest_prod.zip'],
+    release_info,
+    local_version,
+    remote_version,
+    lvn,
+    rvn;
+
+// Check required release
+if (program.release == 'dev') inst_release = 'dev';
+if (program.release == 'minimal') inst_release = 'min';
+
+// Ensure directory for soruces and releases
+fs.ensureDirSync(release_dir);
+
+// Fix proxy
+if (proxy_url && !proxy_url.match(/^http/i)) proxy_url = 'http://' + proxy_url;
+
+console.log(" _____                         _     ___ _____ \n" + "|_   _|                       | |   |_  /  ___|\n" + "  | | __ _ _ __ __ _  ___ ___ | |_    | \\ `--. \n" + "  | |/ _` | '__/ _` |/ __/ _ \\| __|   | |`--. \\\n" + "  | | (_| | | | (_| | (_| (_) | |_/\\__/ /\\__/ /\n" + "  \\_/\\__,_|_|  \\__,_|\\___\\___/ \\__\\____/\\____/ \n");
+
+async.series([
+        function(callback) {
+            console.log('Getting latest TaracotJS release information...');
+            request({
+                url: updates_url,
+                proxy: proxy_url,
+                timeout: 10000, // 10 seconds
+                json: true
+            }, function(error, response, body) {
+                if (!error && response.statusCode === 200) {
+                    release_info = body;
+                    console.log("Got release information, latest core version: " + release_info.core.version);
+                    callback();
+                } else {
+                    callback("Unable to get release information: " + error);
+                }
+            });
+        },
+        function(callback) {
+            fs.readJson(release_dir + '/update_info.json', function(err, _local_release_info) {
+                if (err || !_local_release_info || !_local_release_info.core || !_local_release_info.core.version) {
+                    local_release_info = JSON.parse(JSON.stringify(release_info));
+                    local_release_info.core.version = 0;
+                } else {
+                    local_release_info = _local_release_info;
+                }
+                callback();
+            });
+        },
+        function(callback) {
+            console.log("Local core version: " + (local_release_info.core.version || 'none'));
+            lvn = parseInt(String(local_release_info.core.version).replace(/\./g, ''));
+            rvn = parseInt(String(release_info.core.version).replace(/\./g, ''));
+            if (rvn > lvn) {
+                console.log('Need to update local repository');
+                async.eachSeries(release_filenames,
+                    function(filename, _callback) {
+                        console.log("Downloading " + filename + "...");
+                        progress(request({
+                                method: 'GET',
+                                url: modules_url + '/' + filename,
+                                proxy: proxy_url,
+                                encoding: null
+                            }, function(error, response, body) {
+                                console.log('Saving...');
+                                if (error || response.statusCode !== 200) return _callback(error);
+                                fs.writeFile(release_dir + '/' + filename, body, function(err) {
+                                    if (!err) console.log("Download complete.");
+                                    return _callback(err);
+                                });
+                            }), {
+                                throttle: 200,
+                            })
+                            .on('progress', function(state) {
+                                console.log(state.percent + '%');
+                            });
+                    },
+                    function(err) {
+                        callback(err);
+                    });
+            } else {
+                console.log('Local repository is up to date.');
+                callback();
+            }
+        },
+        function(callback) {
+            if (rvn > lvn) {
+                console.log("Saving local version info...");
+                fs.writeJSON(release_dir + '/update_info.json', release_info, function(err) {
+                    if (err) return callback(err);
+                    console.log('Done.');
+                    callback();
+                });
+            } else {
+                callback();
+            }
+        },
+        function(callback) {
+            if (dest_dir) {
+                console.log("Ensuring the existence of destination directory...");
+                fs.ensureDir(dest_dir, function(err) {
+                    callback(err);
+                });
+            } else {
+                callback();
+            }
+        },
+        function(callback) {
+            fs.readdir(dest_dir, function(err, files) {
+                if (err && 'ENOENT' != err.code) callback(err);
+                if (files && files.length && !program.force && !program.update) return callback('Desitnation directory not empty, use --force flag to ignore');
+                callback();
+            });
+        },
+        function(callback) {
+            console.log("\nInstallation directory: " + (dest_dir || 'current directory'));
+            console.log("Version to install: " + release_info.core.version);
+            console.log("Release code: " + inst_release);
+            if (program.update) console.log("Update mode is chosen, no config files will be overwritten");
+            if (program.silent) {
+                console.log("Silent mode, not asking anything");
+                callback();
+            } else {
+                program.confirm("\nDo you wish to continue? ", function(ok) {
+                    if (!ok) return callback("Aborted.");
+                    callback();
+                });
+            }
+        },
+        function(callback) {
+            console.log("Extracting release archvie...");
+            var unzipper = new DecompressZip(release_dir + '/latest_' + inst_release + '.zip');
+            unzipper.on('error', function(err) {
+                callback(err);
+            });
+            unzipper.on('extract', function(log) {
+                console.log('Finished extracting.');
+                callback();
+            });
+            unzipper.extract({
+                path: dest_dir || path.join(__dirname),
+                filter: function(file) {
+                    if (program.update)
+                        if (file.parent == '.' && (file.filename == 'config.js' || file.filename == 'config_auth.js')) return false;
+                    return true;
+                }
+            });
+        }
+    ],
+    function(err) {
+        if (err) {
+            console.log("\n" + err);
+            process.exit(1);
+        } else {
+            console.log("\nAll done.");
+            console.log("Next, run: cd " + (dest_dir || path.join(__dirname)) + " && npm install");
+            process.exit(0);
+        }
+    });
