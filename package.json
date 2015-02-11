@@ -1,7 +1,7 @@
 {
   "name": "taracotjs-generator",
   "description": "Taracot JS application generator",
-  "version": "0.0.32",
+  "version": "0.0.34",
   "author": {
     "name": "Michael A. Matveev",
     "email": "xtreme@rh1.ru"
@@ -24,8 +24,8 @@
     "taracotjs"
   ],
   "repository": {
-    "type": "mercurial",
-    "url": "https://code.google.com/p/taracotjs-generator/"
+    "type": "github",
+    "url": "https://github.com/xtremespb/taracotjs-generator/"
   },
   "main": "bin/taracotjs",
   "bin": {

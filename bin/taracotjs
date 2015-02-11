@@ -9,7 +9,7 @@ var program = require('commander'),
     DecompressZip = require('decompress-zip');
 
 program
-    .version('0.0.32')
+    .version('0.0.34')
     .usage('[options] [dir]')
     .option('-p, --proxy [proxy]', 'use proxy to download files')
     .option('-r, --release [release]', 'production (default), dev or minimal')

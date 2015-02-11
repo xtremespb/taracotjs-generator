@@ -34,25 +34,25 @@ MongoDB and Redis are required. If your operating system is x64-based Windows, y
 
 The quickest way to get started with TaracotJS is to utilize the executable taracotjs to generate an application as shown below.
 
-1. Install taracotjs-generator:
+Install taracotjs-generator:
 
   ```npm install -g taracotjs-generator```
 
-2. Create Taracot JS instance:
+Create Taracot JS instance:
 
   ```taracotjs /tmp/foo && cd /tmp/foo```
 
-3. Install dependencies:
+Install dependencies:
 
   ```npm install```
 
-4. Edit config.js (using your favorite text editor), don't forget to set MongoDB connection URL and Redis port. You don't have to edit secrets and salt at this point, they will be auto-generated on the next step.
+Edit config.js (using your favorite text editor), don't forget to set MongoDB connection URL and Redis port. You don't have to edit secrets and salt at this point, they will be auto-generated on the next step.
 
-5. Perform system post-configuration:
+Perform system post-configuration:
 
   ```cd bin && node install-system && node install-modules```
 
-6. Rock and Roll:
+Rock and Roll:
 
   ```node webserver```
 
