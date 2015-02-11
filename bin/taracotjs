@@ -9,7 +9,7 @@ var program = require('commander'),
     DecompressZip = require('decompress-zip');
 
 program
-    .version('0.0.34')
+    .version('0.0.35')
     .usage('[options] [dir]')
     .option('-p, --proxy [proxy]', 'use proxy to download files')
     .option('-r, --release [release]', 'production (default), dev or minimal')
@@ -131,7 +131,7 @@ async.series([
             }
         },
         function(callback) {
-            fs.readdir(dest_dir, function(err, files) {
+            fs.readdir(dest_dir || '.', function(err, files) {
                 if (err && 'ENOENT' != err.code) callback(err);
                 if (files && files.length && !program.force && !program.update) return callback('Desitnation directory not empty, use --force flag to ignore');
                 callback();
@@ -163,7 +163,7 @@ async.series([
                 callback();
             });
             unzipper.extract({
-                path: dest_dir || path.join(__dirname),
+                path: dest_dir || '.',
                 filter: function(file) {
                     if (program.update)
                         if (file.parent == '.' && (file.filename == 'config.js' || file.filename == 'config_auth.js')) return false;
@@ -178,7 +178,7 @@ async.series([
             process.exit(1);
         } else {
             console.log("\nAll done.");
-            console.log("Next, run: cd " + (dest_dir || path.join(__dirname)) + " && npm install");
+            console.log("Next, run: cd " + (dest_dir || './') + " && npm install");
             process.exit(0);
         }
     });
