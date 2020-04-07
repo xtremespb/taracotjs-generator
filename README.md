@@ -3,7 +3,7 @@ TaracotJS
 
 TaracotJS is fast and minimalist CMS based on Node.js. It has the following features:
 
- - MongoDB as a database storage and Redis for session storage - for maximum perfomance
+ - MongoDB as a database storage and Redis for session storage - for maximum performance
  - Independent Module structure
  - Multilanguage support out of the box
  - Multifunctional file browser with drag-and-drop and Zip/Unzip support
